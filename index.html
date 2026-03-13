@@ -2,224 +2,160 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Universal Unicode Emoji Kitchen</title>
-
+<title>GOD MODE Emoji Kitchen</title>
 <style>
-body{
-background:#0b0b0b;
-color:white;
-font-family:monospace;
-text-align:center;
+body {
+  background: #111;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin: 0;
 }
-
-h1{
-margin-top:20px;
+h1 {
+  margin-top: 20px;
+  font-size: 28px;
 }
-
-input{
-font-size:42px;
-width:80px;
-text-align:center;
-background:#111;
-color:white;
-border:1px solid #333;
+#picker {
+  display: inline-grid;
+  grid-template-columns: repeat(auto-fill, 40px);
+  gap: 6px;
+  max-width: 460px;
+  margin: 12px auto;
 }
-
-button{
-padding:10px 20px;
-margin:5px;
-font-size:16px;
-background:#222;
-color:white;
-border:1px solid #444;
-cursor:pointer;
+.emoji-btn {
+  font-size: 32px;
+  cursor: pointer;
+  border: 1px solid #333;
+  background: #222;
+  padding: 4px;
+  border-radius: 6px;
 }
-
-button:hover{
-background:#333;
+#result {
+  margin-top: 20px;
 }
-
-#combo{
-font-size:40px;
-margin-top:10px;
+#result img {
+  width: 128px;
+  height: 128px;
 }
-
-#art{
-white-space:pre;
-font-size:12px;
-line-height:10px;
-margin-top:20px;
+button {
+  font-size: 16px;
+  padding: 8px 16px;
+  margin: 8px;
+  background: #333;
+  color: white;
+  border: 1px solid #555;
+  cursor: pointer;
+}
+button:hover {
+  background: #444;
+}
+input {
+  font-size: 32px;
+  width: 60px;
+  text-align: center;
+  margin: 6px;
+  border: 1px solid #444;
+  background: #222;
+  color: white;
 }
 </style>
 </head>
-
 <body>
 
-<h1>🍳 Universal Emoji Kitchen</h1>
+<h1>🔥 GOD MODE Emoji Kitchen</h1>
 
 <div>
-<input id="e1" value="😀">
-<input id="e2" value="🔥">
+  <input id="firstEmoji" placeholder="😀">
+  <input id="secondEmoji" placeholder="🔥">
 </div>
 
 <div>
-<button onclick="cook()">Cook</button>
-<button onclick="randomEmoji()">Random</button>
-<button onclick="download()">Export</button>
+  <button onclick="cook()">Mix</button>
+  <button onclick="randomEmojis()">Random</button>
+  <button onclick="downloadResult()">Download</button>
 </div>
 
-<div id="combo"></div>
+<div id="result"></div>
 
-<pre id="art"></pre>
+<h2>Emoji Picker</h2>
+<div id="picker"></div>
 
 <script>
-
-const blocks=[" ","░","▒","▓","█"];
-
-const colors=[
-"#ff4d4d",
-"#ffaa00",
-"#ffee00",
-"#00ff9d",
-"#00c3ff",
-"#c77dff",
-"#ff66c4"
+// Build a large emoji list (common emoji ranges)
+const emojiRanges = [
+  [0x1F300, 0x1F5FF],
+  [0x1F600, 0x1F64F],
+  [0x1F680, 0x1F6FF],
+  [0x1F700, 0x1F77F],
+  [0x1F780, 0x1F7FF],
+  [0x1F800, 0x1F8FF],
+  [0x1F900, 0x1F9FF]
 ];
 
-function hash(str){
-let h=0;
-for(let i=0;i<str.length;i++){
-h=((h<<5)-h)+str.charCodeAt(i);
-h|=0;
-}
-return Math.abs(h);
-}
-
-/* Generate random emoji from Unicode ranges */
-function randomUnicodeEmoji(){
-
-const ranges=[
-[0x1F600,0x1F64F],
-[0x1F300,0x1F5FF],
-[0x1F680,0x1F6FF],
-[0x1F900,0x1F9FF],
-[0x1FA70,0x1FAFF],
-[0x2600,0x26FF],
-[0x2700,0x27BF]
-];
-
-let range=ranges[Math.floor(Math.random()*ranges.length)];
-
-let code=Math.floor(
-Math.random()*(range[1]-range[0])
-)+range[0];
-
-return String.fromCodePoint(code);
-
+// Flatten into list
+let allEmojis = [];
+for (let [start, end] of emojiRanges) {
+  for (let cp = start; cp <= end; cp++) {
+    allEmojis.push(String.fromCodePoint(cp));
+  }
 }
 
-function randomEmoji(){
+// Populate emoji grid
+const picker = document.getElementById("picker");
+allEmojis.forEach(emo => {
+  let btn = document.createElement("button");
+  btn.textContent = emo;
+  btn.className = "emoji-btn";
+  btn.onclick = () => selectEmoji(emo);
+  picker.appendChild(btn);
+});
 
-document.getElementById("e1").value=randomUnicodeEmoji();
-document.getElementById("e2").value=randomUnicodeEmoji();
-
-cook();
-
+function selectEmoji(emo) {
+  if (!document.getElementById("firstEmoji").value) {
+    document.getElementById("firstEmoji").value = emo;
+  } else {
+    document.getElementById("secondEmoji").value = emo;
+  }
 }
 
-function cook(){
-
-let e1=document.getElementById("e1").value;
-let e2=document.getElementById("e2").value;
-
-document.getElementById("combo").innerText=e1+" + "+e2;
-
-let seed=hash(e1+e2);
-
-let width=60;
-let height=30;
-
-let art="";
-
-for(let y=0;y<height;y++){
-
-let row="";
-
-for(let x=0;x<width/2;x++){
-
-seed=(seed*1664525+1013904223)%4294967296;
-
-let r=(seed>>>0)/4294967296;
-
-let d=Math.sqrt((x-width/4)**2+(y-height/2)**2);
-
-let index;
-
-if(d<6)
-index=4;
-else if(d<8)
-index=3;
-else if(r>.85)
-index=2;
-else if(r>.65)
-index=1;
-else
-index=0;
-
-row+=blocks[index];
-
+function randomEmojis() {
+  document.getElementById("firstEmoji").value = allEmojis[Math.floor(Math.random() * allEmojis.length)];
+  document.getElementById("secondEmoji").value = allEmojis[Math.floor(Math.random() * allEmojis.length)];
+  cook();
 }
 
-let mirror=row.split("").reverse().join("");
+function cook() {
+  const e1 = document.getElementById("firstEmoji").value;
+  const e2 = document.getElementById("secondEmoji").value;
+  document.getElementById("result").innerHTML =
+    `<h2>${e1} + ${e2}</h2>`;
 
-art+=colorize(row+mirror)+"\n";
+  // Build URL pattern for hosted Emoji Kitchen sticker
+  const code1 = Array.from(e1).map(c => c.codePointAt(0).toString(16)).join("-");
+  const code2 = Array.from(e2).map(c => c.codePointAt(0).toString(16)).join("-");
+  
+  // Many community sites use the same pattern for hosted art:
+  const url = `https://emojikitchen.com/kitchen/${code1}/${code1}_${code2}.png`;
 
+  const img = new Image();
+  img.src = url;
+  img.onerror = () => {
+    document.getElementById("result").innerHTML +=
+      "<p style='color: #f55'>No mashup found!</p>";
+  };
+  img.onload = () => {
+    document.getElementById("result").appendChild(img);
+  };
 }
 
-document.getElementById("art").innerHTML=art;
-
+function downloadResult() {
+  const img = document.querySelector("#result img");
+  if (!img) return;
+  const a = document.createElement("a");
+  a.href = img.src;
+  a.download = "emoji_kitchen.png";
+  a.click();
 }
-
-function colorize(line){
-
-let out="";
-
-for(let c of line){
-
-if(c===" ")
-out+=" ";
-else{
-
-let color=colors[Math.floor(Math.random()*colors.length)];
-
-out+='<span style="color:'+color+'">'+c+"</span>";
-
-}
-
-}
-
-return out;
-
-}
-
-function download(){
-
-let text=document.getElementById("art").innerText;
-
-let blob=new Blob([text],{type:"text/plain"});
-
-let a=document.createElement("a");
-
-a.href=URL.createObjectURL(blob);
-
-a.download="emoji_unicode_art.txt";
-
-a.click();
-
-}
-
-cook();
-
 </script>
 
 </body>
