@@ -1,157 +1,226 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Drift Boss Clone</title>
+<meta charset="UTF-8">
+<title>Universal Unicode Emoji Kitchen</title>
+
 <style>
 body{
-    margin:0;
-    background:#111;
-    color:white;
-    font-family:monospace;
-    text-align:center;
+background:#0b0b0b;
+color:white;
+font-family:monospace;
+text-align:center;
 }
-canvas{
-    background:#222;
-    display:block;
-    margin:auto;
+
+h1{
+margin-top:20px;
 }
-#ui{
-    position:absolute;
-    top:10px;
-    left:50%;
-    transform:translateX(-50%);
+
+input{
+font-size:42px;
+width:80px;
+text-align:center;
+background:#111;
+color:white;
+border:1px solid #333;
+}
+
+button{
+padding:10px 20px;
+margin:5px;
+font-size:16px;
+background:#222;
+color:white;
+border:1px solid #444;
+cursor:pointer;
+}
+
+button:hover{
+background:#333;
+}
+
+#combo{
+font-size:40px;
+margin-top:10px;
+}
+
+#art{
+white-space:pre;
+font-size:12px;
+line-height:10px;
+margin-top:20px;
 }
 </style>
 </head>
+
 <body>
 
-<div id="ui">
-<h2>DRIFT BOSS</h2>
-<p>Hold SPACE or CLICK to drift right</p>
-<p>Release to drift left</p>
-<p>Score: <span id="score">0</span></p>
+<h1>🍳 Universal Emoji Kitchen</h1>
+
+<div>
+<input id="e1" value="😀">
+<input id="e2" value="🔥">
 </div>
 
-<canvas id="game" width="400" height="600"></canvas>
+<div>
+<button onclick="cook()">Cook</button>
+<button onclick="randomEmoji()">Random</button>
+<button onclick="download()">Export</button>
+</div>
+
+<div id="combo"></div>
+
+<pre id="art"></pre>
 
 <script>
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const blocks=[" ","░","▒","▓","█"];
 
-let player = {
-    x:200,
-    y:450,
-    size:15,
-    dir:-1
-};
+const colors=[
+"#ff4d4d",
+"#ffaa00",
+"#ffee00",
+"#00ff9d",
+"#00c3ff",
+"#c77dff",
+"#ff66c4"
+];
 
-let holding = false;
-let road = [];
-let score = 0;
-let speed = 2;
-let alive = true;
-
-function newTile(){
-    let last = road.length ? road[road.length-1].x : 200;
-    let offset = (Math.random()*120)-60;
-    road.push({
-        x:last+offset,
-        y:-40,
-        width:120
-    });
+function hash(str){
+let h=0;
+for(let i=0;i<str.length;i++){
+h=((h<<5)-h)+str.charCodeAt(i);
+h|=0;
+}
+return Math.abs(h);
 }
 
-for(let i=0;i<20;i++){
-    newTile();
-    road[i].y=i*40;
-}
+/* Generate random emoji from Unicode ranges */
+function randomUnicodeEmoji(){
 
-document.addEventListener("keydown",e=>{
-    if(e.code==="Space") holding=true;
-});
+const ranges=[
+[0x1F600,0x1F64F],
+[0x1F300,0x1F5FF],
+[0x1F680,0x1F6FF],
+[0x1F900,0x1F9FF],
+[0x1FA70,0x1FAFF],
+[0x2600,0x26FF],
+[0x2700,0x27BF]
+];
 
-document.addEventListener("keyup",e=>{
-    if(e.code==="Space") holding=false;
-});
+let range=ranges[Math.floor(Math.random()*ranges.length)];
 
-document.addEventListener("mousedown",()=>holding=true);
-document.addEventListener("mouseup",()=>holding=false);
+let code=Math.floor(
+Math.random()*(range[1]-range[0])
+)+range[0];
 
-function update(){
-
-    if(!alive) return;
-
-    player.dir = holding ? 1 : -1;
-    player.x += player.dir*speed;
-
-    road.forEach(tile=>{
-        tile.y+=speed;
-
-        if(tile.y>canvas.height){
-            road.shift();
-            newTile();
-            score++;
-            document.getElementById("score").textContent = score;
-
-            if(score%20===0) speed+=0.3;
-        }
-    });
-
-    let current = road.find(t =>
-        player.y > t.y &&
-        player.y < t.y+40
-    );
-
-    if(current){
-        if(player.x < current.x-current.width/2 ||
-           player.x > current.x+current.width/2){
-            alive=false;
-        }
-    }
+return String.fromCodePoint(code);
 
 }
 
-function draw(){
+function randomEmoji(){
 
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+document.getElementById("e1").value=randomUnicodeEmoji();
+document.getElementById("e2").value=randomUnicodeEmoji();
 
-    ctx.fillStyle="#555";
-
-    road.forEach(tile=>{
-        ctx.fillRect(
-            tile.x-tile.width/2,
-            tile.y,
-            tile.width,
-            40
-        );
-    });
-
-    ctx.fillStyle="#0f0";
-
-    ctx.beginPath();
-    ctx.arc(player.x,player.y,player.size,0,Math.PI*2);
-    ctx.fill();
-
-    if(!alive){
-        ctx.fillStyle="red";
-        ctx.font="30px monospace";
-        ctx.fillText("GAME OVER",110,300);
-
-        ctx.font="16px monospace";
-        ctx.fillText("Refresh to restart",120,340);
-    }
+cook();
 
 }
 
-function loop(){
-    update();
-    draw();
-    requestAnimationFrame(loop);
+function cook(){
+
+let e1=document.getElementById("e1").value;
+let e2=document.getElementById("e2").value;
+
+document.getElementById("combo").innerText=e1+" + "+e2;
+
+let seed=hash(e1+e2);
+
+let width=60;
+let height=30;
+
+let art="";
+
+for(let y=0;y<height;y++){
+
+let row="";
+
+for(let x=0;x<width/2;x++){
+
+seed=(seed*1664525+1013904223)%4294967296;
+
+let r=(seed>>>0)/4294967296;
+
+let d=Math.sqrt((x-width/4)**2+(y-height/2)**2);
+
+let index;
+
+if(d<6)
+index=4;
+else if(d<8)
+index=3;
+else if(r>.85)
+index=2;
+else if(r>.65)
+index=1;
+else
+index=0;
+
+row+=blocks[index];
+
 }
 
-loop();
+let mirror=row.split("").reverse().join("");
+
+art+=colorize(row+mirror)+"\n";
+
+}
+
+document.getElementById("art").innerHTML=art;
+
+}
+
+function colorize(line){
+
+let out="";
+
+for(let c of line){
+
+if(c===" ")
+out+=" ";
+else{
+
+let color=colors[Math.floor(Math.random()*colors.length)];
+
+out+='<span style="color:'+color+'">'+c+"</span>";
+
+}
+
+}
+
+return out;
+
+}
+
+function download(){
+
+let text=document.getElementById("art").innerText;
+
+let blob=new Blob([text],{type:"text/plain"});
+
+let a=document.createElement("a");
+
+a.href=URL.createObjectURL(blob);
+
+a.download="emoji_unicode_art.txt";
+
+a.click();
+
+}
+
+cook();
 
 </script>
+
 </body>
 </html>
