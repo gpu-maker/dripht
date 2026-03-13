@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Drift Boss Clone</title>
+<style>
+body{
+    margin:0;
+    background:#111;
+    color:white;
+    font-family:monospace;
+    text-align:center;
+}
+canvas{
+    background:#222;
+    display:block;
+    margin:auto;
+}
+#ui{
+    position:absolute;
+    top:10px;
+    left:50%;
+    transform:translateX(-50%);
+}
+</style>
+</head>
+<body>
+
+<div id="ui">
+<h2>DRIFT BOSS</h2>
+<p>Hold SPACE or CLICK to drift right</p>
+<p>Release to drift left</p>
+<p>Score: <span id="score">0</span></p>
+</div>
+
+<canvas id="game" width="400" height="600"></canvas>
+
+<script>
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let player = {
+    x:200,
+    y:450,
+    size:15,
+    dir:-1
+};
+
+let holding = false;
+let road = [];
+let score = 0;
+let speed = 2;
+let alive = true;
+
+function newTile(){
+    let last = road.length ? road[road.length-1].x : 200;
+    let offset = (Math.random()*120)-60;
+    road.push({
+        x:last+offset,
+        y:-40,
+        width:120
+    });
+}
+
+for(let i=0;i<20;i++){
+    newTile();
+    road[i].y=i*40;
+}
+
+document.addEventListener("keydown",e=>{
+    if(e.code==="Space") holding=true;
+});
+
+document.addEventListener("keyup",e=>{
+    if(e.code==="Space") holding=false;
+});
+
+document.addEventListener("mousedown",()=>holding=true);
+document.addEventListener("mouseup",()=>holding=false);
+
+function update(){
+
+    if(!alive) return;
+
+    player.dir = holding ? 1 : -1;
+    player.x += player.dir*speed;
+
+    road.forEach(tile=>{
+        tile.y+=speed;
+
+        if(tile.y>canvas.height){
+            road.shift();
+            newTile();
+            score++;
+            document.getElementById("score").textContent = score;
+
+            if(score%20===0) speed+=0.3;
+        }
+    });
+
+    let current = road.find(t =>
+        player.y > t.y &&
+        player.y < t.y+40
+    );
+
+    if(current){
+        if(player.x < current.x-current.width/2 ||
+           player.x > current.x+current.width/2){
+            alive=false;
+        }
+    }
+
+}
+
+function draw(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle="#555";
+
+    road.forEach(tile=>{
+        ctx.fillRect(
+            tile.x-tile.width/2,
+            tile.y,
+            tile.width,
+            40
+        );
+    });
+
+    ctx.fillStyle="#0f0";
+
+    ctx.beginPath();
+    ctx.arc(player.x,player.y,player.size,0,Math.PI*2);
+    ctx.fill();
+
+    if(!alive){
+        ctx.fillStyle="red";
+        ctx.font="30px monospace";
+        ctx.fillText("GAME OVER",110,300);
+
+        ctx.font="16px monospace";
+        ctx.fillText("Refresh to restart",120,340);
+    }
+
+}
+
+function loop(){
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+loop();
+
+</script>
+</body>
+</html>
